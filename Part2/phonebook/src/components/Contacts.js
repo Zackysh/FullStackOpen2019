@@ -1,17 +1,11 @@
 import React from 'react'
-import Person from './Person'
+import Contact from './Contact'
 
-const Contacts = ({ persons }) => {
-    return (
-        <>
-            <h2>Contacts</h2>
-            <ul>
-                {persons.map(person =>
-                    <Person key={person.name} person={person} />
-                )}
-            </ul>
-        </>
-    )
-}
+const Contacts = ({ contacts }) =>
+    <ul>
+        {contacts.map(contact =>
+            <Contact key={contact.name} contact={contact} />)
+        }
+    </ul>
 
 export default Contacts

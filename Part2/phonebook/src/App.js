@@ -1,49 +1,52 @@
 import React, { useState } from 'react'
 import Contacts from './components/Contacts'
+import ContactForm from './components/ContactForm'
+import Filter from './components/Filter'
 
 const App = () => {
-  const [persons, setPersons] = useState([
+
+  const [contacts, setContacts] = useState([
     { name: 'Arto Hellas', number: '040-123-4561' },
     { name: 'Ada Lovelace', number: '393-442-5323' },
     { name: 'Dan Abramov', number: '123-433-2343' },
     { name: 'Mary Poppendieck', number: '392-231-6423' }
   ])
-  const [newName, setNewName] = useState('')
   const [filter, setFilter] = useState('')
-  const [newNumber, setNewNumber] = useState('')
+  const [newName, setNewName] = useState('')
+  const [newPhone, setNewPhone] = useState('')
 
-  const addPerson = (event) => {
+  const addContact = (event) => {
     event.preventDefault();
-    if (persons.find(person => person.name === newName))
+    if (contacts.find(person => person.name === newName))
       alert(`${newName} already exist, try another.`)
-    else if (persons.find(person => person.number === newNumber))
-      alert(`${newNumber} already exist, try another.`)
-    else if (!newName || !newNumber)
+    else if (contacts.find(person => person.number === newPhone))
+      alert(`${newPhone} already exist, try another.`)
+    else if (!newName || !newPhone)
       alert('You must fill all fields.')
-    else if (newNumber.length < 12)
-      alert('Invalid number.')
+    else if (newPhone.length < 12)
+      alert('Invalid phone number.')
     else {
       event.preventDefault();
-      const newPerson = {
+      const newContact = {
         name: newName,
-        number: newNumber
+        number: newPhone
       }
-      setPersons(persons.concat(newPerson))
+      console.log(newContact)
+      setContacts(contacts.concat(newContact))
       setNewName('')
-      setNewNumber('')
+      setNewPhone('')
     }
   }
 
   const handleFilterChange = (event) => {
     setFilter(event.target.value)
-    setPersons(persons.filter(person => person.name.includes(filter)))
   }
 
   const handleNameChange = (event) => {
     setNewName(event.target.value);
   }
 
-  const handleNumberChange = (event) => {
+  const handlePhoneChange = (event) => {
     if (event.target.value.length <= 12) { /* 10 cifras y dos guiones */
       var cleaned = ("" + event.target.value).replace(/\D/g, "");
 
@@ -51,20 +54,30 @@ const App = () => {
         }${cleaned.substring(3, 6)}${cleaned.length > 6 ? "-" : ""
         }${cleaned.substring(6, 11)}`;
 
-      setNewNumber(normValue);
+      setNewPhone(normValue);
     }
+  }
+
+  const showContacts = () => {
+    return contacts.filter(person =>
+      person.name.toLowerCase().includes(filter.toLowerCase()))
   }
 
   return (
     <>
       <h2>Phonebook</h2>
       <h3>Filter</h3>
-      <input
-        value={filter}
-        onChange={handleFilterChange}
+      <Filter value={filter} onChange={handleFilterChange} />
+
+      <h3>Add new</h3>
+      <ContactForm
+        onSubmit={addContact}
+        name={{ value: newName, onChange: handleNameChange }}
+        phone={{ value: newPhone, onChange: handlePhoneChange }}
       />
-      
-      <Contacts persons={persons} />
+
+      <h2>Contacts</h2>
+      <Contacts contacts={showContacts()} />
     </>
   )
 }
