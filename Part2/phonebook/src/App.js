@@ -1,43 +1,91 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import axios from 'axios'
+
+import contactServices from './services/contact'
+
 import Contacts from './components/Contacts'
 import ContactForm from './components/ContactForm'
 import Filter from './components/Filter'
 
 const App = () => {
 
-  const [contacts, setContacts] = useState([
-    { name: 'Arto Hellas', number: '040-123-4561' },
-    { name: 'Ada Lovelace', number: '393-442-5323' },
-    { name: 'Dan Abramov', number: '123-433-2343' },
-    { name: 'Mary Poppendieck', number: '392-231-6423' }
-  ])
+  const [contacts, setContacts] = useState([])
   const [filter, setFilter] = useState('')
   const [newName, setNewName] = useState('')
   const [newPhone, setNewPhone] = useState('')
 
+  useEffect(() => {
+    contactServices
+      .getAll()
+      .then(response => {
+        setContacts(response)
+      })
+  }, [])
+
   const addContact = (event) => {
     event.preventDefault();
-    if (contacts.find(person => person.name === newName))
-      alert(`${newName} already exist, try another.`)
-    else if (contacts.find(person => person.number === newPhone))
-      alert(`${newPhone} already exist, try another.`)
-    else if (!newName || !newPhone)
+    const nameMatch = contacts.find(person => person.name === newName);
+    const numberMatch = contacts.find(person => person.number === newPhone);
+
+    if (!newName || !newPhone) {
       alert('You must fill all fields.')
-    else if (newPhone.length < 12)
+    } else if (newPhone.length < 12)
       alert('Invalid phone number.')
-    else {
-      event.preventDefault();
-      const newContact = {
-        name: newName,
-        number: newPhone
+    else if (nameMatch) { /* if name is already taken */
+      if (numberMatch) /* if number is already taken */
+        if (numberMatch === nameMatch)
+          alert('You have specified an existing contact')
+        else {
+          alert(`Given name already exist and given number belongs to ${numberMatch.name}`)
+        }
+      else {
+        const answer = window.confirm(`${newName} already exist, replace the old number with a new one?.`);
+        if (answer) { /* if user want to change phone number */
+          const contactToEdit = contacts.find(contact => contact.name === newName);
+          const editedContact = { ...contactToEdit, number: newPhone };
+
+          contactServices
+            .update(contactToEdit.id, editedContact);
+
+          setContacts(contacts.map(contact => contact !== contactToEdit ? contact : editedContact))
+          setNewName('')
+          setNewPhone('')
+        }
       }
-      console.log(newContact)
-      setContacts(contacts.concat(newContact))
-      setNewName('')
-      setNewPhone('')
+
+    } else { /* all Ok */
+      let create = true;
+
+      if (numberMatch) {
+        create = window.confirm(`Given number belongs to ${numberMatch.name}, do you still want to create this contact?`)
+      }
+
+      if (create) {
+        const newContact = {
+          name: newName,
+          number: newPhone
+        }
+
+        contactServices
+          .create(newContact)
+          .then(response => {
+            setContacts(contacts.concat(response))
+            setNewName('')
+            setNewPhone('')
+          })
+      }
     }
   }
 
+  const deleteContact = (id) => {
+    const contact = contacts.find(contact => contact.id === id)
+    if (window.confirm(`Do you want to remove ${contact.name} contact?`)) {
+      contactServices.deleteO(id).then(() => setContacts(contacts.filter(contact => contact.id !== id)))
+    } else
+      alert('Operation cancelled')
+  }
+
+  /* ------------------ onChange Handlers ------------------- */
   const handleFilterChange = (event) => {
     setFilter(event.target.value)
   }
@@ -57,7 +105,11 @@ const App = () => {
       setNewPhone(normValue);
     }
   }
+  /* ------------------ onChange Handlers ------------------- */
 
+  /**
+   * This method return an array after aplying a filter to it.
+   */
   const showContacts = () => {
     return contacts.filter(person =>
       person.name.toLowerCase().includes(filter.toLowerCase()))
@@ -77,7 +129,7 @@ const App = () => {
       />
 
       <h2>Contacts</h2>
-      <Contacts contacts={showContacts()} />
+      <Contacts contacts={showContacts()} onDelete={deleteContact} />
     </>
   )
 }
